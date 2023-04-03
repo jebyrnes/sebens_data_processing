@@ -3,9 +3,9 @@ library(tidyr)
 library(stringr)
 library(readxl)
 
-
+tester <- "HRI090820H2.xls"
 f <- list.files("Sessile QAQC files 2022",
-                pattern = "HRI090820H2.xls",
+                pattern = tester,
                 recursive = TRUE, full.names = TRUE)
 
 f <- f[1]
@@ -127,13 +127,17 @@ canopy <- canopy |>
   filter((Sq %in% c("A", "B")))
 
 # Make sure species names are constant for A and B
-canopy <- canopy |>
-  mutate(id = sort(rep(1:(nrow(canopy)/2),2))) |>
-  group_by(id) |>
-  arrange(Sq) |>
-  mutate(Species = Species[1]) |>
-  ungroup() |> arrange(Species, Sq) |>
-  select(-id)
+make_consistent_species_names <- function(dat){
+  dat |>
+    mutate(id = sort(rep(1:(nrow(dat)/2),2))) |>
+    group_by(id) |>
+    arrange(Sq) |>
+    mutate(Species = Species[1]) |>
+    ungroup() |> arrange(Species, Sq) |>
+    select(-id)
+  
+}
+canopy <- make_consistent_species_names(canopy)
 
 # if there is only square A, then canopy will be in B
 if(!has_b){
@@ -148,5 +152,29 @@ canopy_long <- make_dat_long(canopy, canopy_totals, "Canopy")
 
 
 ### Sediment
+sediment <- sediment |>
+  filter(!is.na(Sq)) |>
+  filter((Sq %in% c("A", "B"))) |>
+  make_consistent_species_names()
+
+if(!has_b){
+  sediment <- sediment |> 
+    filter(Sq == "A")
+}
+
+sediment_wide <- sediment |>
+  pivot_longer(cols = c(-Species, -Sq),
+               names_to = "Quad",
+               values_to = "Points",
+               values_transform = list(Points = as.numeric)
+  ) |>
+  
+  pivot_wider(names_from = "Species",
+              values_from = "Points")
 
 ### Bind it all together
+
+final_dat <- bind_rows(substrate_long, canopy_long) |>
+  left_join(sediment_wide)
+
+readr::write_csv(final_dat, glue::glue("output_data/{tester}_.csv"))

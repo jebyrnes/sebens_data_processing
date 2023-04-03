@@ -170,11 +170,14 @@ sediment_long <- sediment |>
   pivot_longer(cols = c(-Species, -Sq),
                names_to = "Quad",
                values_to = "Points",
-               values_transform = list(Points = as.numeric)
-  ) |>
+               values_transform = list(Points = as.numeric)) |>
   group_by(Quad, Sq) |>
   mutate(total_points = sum(Points),
-         potential_points = NA)
+         potential_points = NA) |>
+  ungroup() %>%
+  bind_cols(metadata, .) |>
+  select(-num_quads) |>
+  mutate(Type = "Sediment")
   
 # wide if you want it wide
 sediment_wide <- sediment_long |>

@@ -102,7 +102,7 @@ make_dat_long <- function(dat, dat_totals, type){
                  values_to = "Points",
                  values_transform = list(Points = as.numeric)
     ) |>
-    left_join(sub_totals) %>%
+    left_join(dat_totals) %>%
     
     # add back metadata
     bind_cols(metadata, .) |>
@@ -162,19 +162,29 @@ if(!has_b){
     filter(Sq == "A")
 }
 
-sediment_wide <- sediment |>
+# reshape the sediment to long to merge with data
+# note - summing total points here, and the data
+# has no "potential points" - ask Ken if we should use 
+# something from canopy or substrate
+sediment_long <- sediment |>
   pivot_longer(cols = c(-Species, -Sq),
                names_to = "Quad",
                values_to = "Points",
                values_transform = list(Points = as.numeric)
   ) |>
+  group_by(Quad, Sq) |>
+  mutate(total_points = sum(Points),
+         potential_points = NA)
   
+# wide if you want it wide
+sediment_wide <- sediment_long |>
   pivot_wider(names_from = "Species",
               values_from = "Points")
 
 ### Bind it all together
 
-final_dat <- bind_rows(substrate_long, canopy_long) |>
-  left_join(sediment_wide)
+final_dat <- bind_rows(substrate_long, 
+                       canopy_long,
+                       sediment_long)
 
 readr::write_csv(final_dat, glue::glue("output_data/{tester}_.csv"))

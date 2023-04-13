@@ -5,7 +5,7 @@
 
 ### load libraries
 if (!require("pacman")) install.packages("pacman")
-pacman::p_load(dplyr, tidyr, stringr, readxl)
+pacman::p_load(dplyr, tidyr, stringr, readxl, readr, glue)
 
 ### The main function
 load_sebens_data_file <- function(f){
@@ -44,7 +44,7 @@ load_sebens_data_file <- function(f){
   fname <- metadata$filename[1] |>
     str_remove("\\.xls.*$")
   
-  readr::write_csv(final_dat, glue::glue("output_data/{fname}_.csv"))
+  write_csv(final_dat, glue("output_data/{fname}.csv"))
   
 }
 

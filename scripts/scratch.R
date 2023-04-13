@@ -3,12 +3,12 @@ library(tidyr)
 library(stringr)
 library(readxl)
 
-tester <- "HRI090820H2.xls"
-f <- list.files("Sessile QAQC files 2022",
-                pattern = tester,
+#tester <- "HRI090820H2.xls"
+f_all <- list.files("Sessile QAQC files 2022",
+                #pattern = tester,
                 recursive = TRUE, full.names = TRUE)
 
-f <- f[1]
+f <- f_all[1]
 
 dat <- read_excel(f, sheet = "Summary")
 

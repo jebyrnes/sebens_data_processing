@@ -8,7 +8,11 @@ if (!require("pacman")) install.packages("pacman")
 pacman::p_load(dplyr, tidyr, stringr, readxl, readr, glue)
 
 ### The main function
-process_sebens_data_file <- function(f, check = FALSE){
+process_sebens_data_file <- function(f, 
+                                     check = FALSE, debug = FALSE){
+  if(debug){
+    print(f)
+  }
 
   # note, early files might not have summary tab, but it's sheet 1
   dat <- read_excel(f, sheet = "Summary",
@@ -18,7 +22,7 @@ process_sebens_data_file <- function(f, check = FALSE){
   metadata <- get_sebens_metadata(f, dat)
   
   # reload the data
-  dat_trimmed <- reload_sebens_data(f)
+  dat_trimmed <- reload_sebens_data(f, metadata)
   
   # get the pieces
   dat_split <-  split_sebens_data(dat_trimmed)
@@ -67,7 +71,7 @@ get_sebens_metadata <- function(f, dat){
   metadata
 }
 
-reload_sebens_data <- function(f){
+reload_sebens_data <- function(f, metadata){
   
   ### Reload data and prep for extraction
   # reload data a few lines down with appropriate columns

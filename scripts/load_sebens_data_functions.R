@@ -8,7 +8,7 @@ if (!require("pacman")) install.packages("pacman")
 pacman::p_load(dplyr, tidyr, stringr, readxl, readr, glue)
 
 ### The main function
-load_sebens_data_file <- function(f){
+process_sebens_data_file <- function(f, check = FALSE){
 
   # note, early files might not have summary tab, but it's sheet 1
   dat <- read_excel(f, sheet = "Summary",
@@ -26,6 +26,7 @@ load_sebens_data_file <- function(f){
   # process substrate and figure out if we are using A
   # only or A and b
   subs_list <- process_substrate(dat_split$substrate, metadata)
+
   substrate_long = subs_list$substrate_long
   has_b <- subs_list$has_b
   
@@ -33,7 +34,8 @@ load_sebens_data_file <- function(f){
   canopy_long <- process_canopy(dat_split$canopy, has_b, metadata)
 
   # sediment
-  sediment_long <- process_sediment(dat_split$sediment, has_b, metadata)
+  sediment_long <- process_sediment(dat_split$sediment, has_b, 
+                                    metadata, substrate_long$potential_points[1])
   
   ### Bind it all together
   final_dat <- bind_rows(substrate_long, 
@@ -46,6 +48,7 @@ load_sebens_data_file <- function(f){
   
   write_csv(final_dat, glue("output_data/{fname}.csv"))
   
+  if(check) return(final_dat)
 }
 
 get_sebens_metadata <- function(f, dat){
@@ -130,7 +133,8 @@ make_dat_long <- function(dat, dat_totals, type, metadata){
                  values_to = "Points",
                  values_transform = list(Points = as.numeric)
     ) |>
-    left_join(dat_totals) %>%
+    left_join(dat_totals,
+              by = join_by(Quad)) %>%
     
     # add back metadata
     bind_cols(metadata, .) |>
@@ -214,7 +218,8 @@ process_canopy <- function(canopy, has_b, metadata){
 }
 
 # function to get sediment info
-process_sediment <- function(sediment, has_b, metadata){
+process_sediment <- function(sediment, has_b, 
+                             metadata, potential_points){
   sediment <- sediment |>
     filter(!is.na(Sq)) |>
     filter((Sq %in% c("A", "B"))) |>
@@ -236,7 +241,7 @@ process_sediment <- function(sediment, has_b, metadata){
                  values_transform = list(Points = as.numeric)) |>
     group_by(Quad, Sq) |>
     mutate(total_points = sum(Points),
-           potential_points = 200) |>
+           potential_points = potential_points) |>
     ungroup() %>%
     bind_cols(metadata, .) |>
     select(-num_quads) |>
